@@ -67,12 +67,22 @@ jobs:
 
       - name: Check for lesson assignments
         id: check_lessons
-        if: github.event_name == 'pull_request'
         run: |
-          # PR 事件：检测 PR 来源仓库（学员 Fork 的仓库）
-          CHECK_OWNER=${{ github.event.pull_request.head.repo.owner.login }}
-          CHECK_REPO=${{ github.event.pull_request.head.repo.name }}
-          STUDENT_NAME=${{ github.actor }}
+          # 确定要检测的仓库和学员用户名
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # PR 事件：检测 PR 来源仓库（学员 Fork 的仓库）
+            CHECK_OWNER=${{ github.event.pull_request.head.repo.owner.login }}
+            CHECK_REPO=${{ github.event.pull_request.head.repo.name }}
+            STUDENT_NAME=${{ github.actor }}
+            echo "PR 模式：检测仓库 $CHECK_OWNER/$CHECK_REPO，学员 $STUDENT_NAME"
+          else
+            # 非 PR 事件：检测当前仓库
+            REPO_NAME=${{ github.repository }}
+            CHECK_OWNER=$(echo $REPO_NAME | cut -d'/' -f1)
+            CHECK_REPO=$(echo $REPO_NAME | cut -d'/' -f2)
+            STUDENT_NAME=$CHECK_OWNER
+            echo "非 PR 模式：检测仓库 $CHECK_OWNER/$CHECK_REPO，学员 $STUDENT_NAME"
+          fi
           
           echo "检测学员 $STUDENT_NAME 在仓库 $CHECK_OWNER/$CHECK_REPO 中的作业"
           
@@ -220,7 +230,6 @@ jobs:
           rm /tmp/decrypted-config.env
 
       - name: Post lesson assignments score to remote API
-        if: github.event_name == 'pull_request'
         run: |
           STUDENT_NAME=${{ env.student_name }}
           
